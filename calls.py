@@ -13,17 +13,17 @@ class PrivateCalls(Currencies):
     def authentication(self):
         return BudaHMACAuth(self.api_key, self.api_secret)
 
+    def private_task(self, action, format_2, params=None, format_1='markets'):
+        auth = self.authentication()
+        return self.task(action, format_2, params, auth, format_1)
+
     def my_orders(self, per, page, state='traded'):
         params = {
             'state': state,
             'per': per,
             'page': page
         }
-        auth = self.authentication()
-        url = self.url_generator('orders')
-        response = self.link_json_get(url, auth, params)
-        self.jprint(response)
+        return self.private_task('get', 'orders', params)
 
     def order_status(self, identification):
-        url = self.url_generator(identification, 'orders')
-
+        self.private_task('get', identification, {}, 'orders')
