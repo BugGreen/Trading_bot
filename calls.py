@@ -1,5 +1,6 @@
-from currencies import Currencies
+from currencies import Currencies, jprint
 from private_calls import BudaHMACAuth
+import requests
 # Este módulo permite hacer obtener información privada de la cuenta asociada
 # a la llave y API secret: balance, historial de ordenes, generar ordenes, etc..
 
@@ -27,3 +28,12 @@ class PrivateCalls(Currencies):
 
     def order_status(self, identification):
         self.private_task('get', identification, {}, 'orders')
+
+    def order_creation(self, order_type, price, amount, price_type='limit'):
+        params = {
+            'type': order_type,
+            'price_type': price_type,
+            'limit': price,
+            'amount': amount,
+        }
+        return self.private_task('post', 'orders', params)

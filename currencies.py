@@ -14,26 +14,24 @@ class Currencies:
     # Este método genera el link que se necesita en cada caso
     def url_generator(self, format_2, format_1='markets') -> str:
         url = self.url
-        if format_1 in ('orders', 'balances'):
-            url = f'https://www.buda.com/api/v2/{{}}/{{}}'
         return str(url.format(format_1, format_2))
 
     # Vueleve un get requests en un objeto json
     @staticmethod
-    def link_json_get(self, link, params=None, auth=None):
-        return requests.get(link, auth=auth, params=params).json()
+    def link_json_get(self, url, params=None, auth=None):
+        return requests.get(url, auth=auth, params=params).json()
 
     # Vueleve un post requests en un objeto json
     @staticmethod
-    def link_json_post(self, url, dictionary):
-        return requests.post(url, json=dictionary).json()
+    def link_json_post(self, url, params, auth=None):
+        return requests.post(url, auth=auth, json=params).json()
 
     def task(self, action, format_2, params=None, auth=None, format_1='markets'):
         url = self.url_generator(format_2, format_1)
         if action == 'get':
             return self.link_json_get(self, url, params, auth)
         elif action == 'post':
-            self.link_json_post(self, url, params)
+            return self.link_json_post(self, url, params, auth)
         else:
             print('action required: get or post')
 
