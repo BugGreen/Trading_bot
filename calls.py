@@ -71,6 +71,7 @@ class PrivateCalls(Currencies):
             return price, response['order']['id']
         else:
             print('El spread no es suficiente')
+            return 'El spread no es suficiente'
 
     def filled(self, identification):
         amounts = self.order_status(identification)
@@ -96,6 +97,10 @@ class PrivateCalls(Currencies):
     def order_cycle(self, order_type, amount):
 
         order_data = self.order_choice(order_type, amount)
+        '''
+        if order_data == 'El spread no es suficiente':
+            price = float(self.order_book()['order_book']['bids'][1][0]+1)'''
+
 
         try:
             price, identification = order_data[0], order_data[1]
@@ -121,10 +126,12 @@ class PrivateCalls(Currencies):
                 elif status == 'Incomplete':
                     amount = diff
                 print(reference, order_type, '\nProcedo a cancelar amos')
+                # print(self.order_book()['order_book']['bids'][1])
                 self.order_cancellation(identification)
+                time.sleep(4)
                 order_data = self.order_choice(order_type, amount)
                 price, identification = order_data[0], order_data[1]
-                time.sleep(1)
+                # time.sleep(4)
             # if count % 50 == 0:
             # time.sleep(5)
             count += 1
