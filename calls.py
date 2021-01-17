@@ -1,4 +1,4 @@
-from currencies import Currencies, jprint
+from public_calls import Currencies, jprint
 from private_calls import BudaHMACAuth
 import requests
 # Este módulo permite hacer obtener información privada de la cuenta asociada
@@ -30,6 +30,12 @@ class PrivateCalls(Currencies):
         self.private_task('get', identification, {}, 'orders')
 
     def order_creation(self, order_type, price, amount, price_type='limit'):
+        amount = (amount / price) * 1.004
+        '''if order_type == 'Ask':
+            amount = (amount / price) * 1.004
+        elif order_type == 'Bid':
+            amount = (price / )
+        print(order_type)'''
         params = {
             'type': order_type,
             'price_type': price_type,
@@ -37,3 +43,9 @@ class PrivateCalls(Currencies):
             'amount': amount,
         }
         return self.private_task('post', 'orders', params)
+
+    def order_cancellation(self, order_id):
+        params = {
+            'state': 'canceling',
+        }
+        return self.private_task('put', order_id, params, 'orders')
