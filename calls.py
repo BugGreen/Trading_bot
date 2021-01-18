@@ -94,13 +94,19 @@ class PrivateCalls(Currencies):
         else:
             return None
 
+    def correct_order_creations(self):
+        pending_orders = self.my_orders(3, 1, 'pending')['orders']
+        print(len(pending_orders))
+        # num_pending_orders = len(pending_orders)
+        for order_num in range(1, len(pending_orders)):
+            self.order_cancellation(float(pending_orders[order_num]['id']))
+
     def order_cycle(self, order_type, amount):
 
         order_data = self.order_choice(order_type, amount)
         '''
         if order_data == 'El spread no es suficiente':
             price = float(self.order_book()['order_book']['bids'][1][0]+1)'''
-
 
         try:
             price, identification = order_data[0], order_data[1]
@@ -111,8 +117,9 @@ class PrivateCalls(Currencies):
         print(price)
         time.sleep(5)
         count = 1
+
         while 1 > 0:
-            print(count)
+
             references = self.spread()
             if order_type == 'Ask':
                 reference = references[0] # Min Ask
@@ -122,17 +129,31 @@ class PrivateCalls(Currencies):
                 status_info = self.filled(identification)
                 status, diff = status_info[0], status_info[1]
                 if status == 'Traded':
+                    print('La orden {}, fue completada satisfactoriamente en la iteración {}.'.format(order_type,
+                                                                                                      count))
                     order_type = self.change_type(order_type)
+                    print('Procedo a generar una orden {}'.format(order_type))
+                    time.sleep(3.5)
                 elif status == 'Incomplete':
                     amount = diff
-                print(reference, order_type, '\nProcedo a cancelar amos')
-                # print(self.order_book()['order_book']['bids'][1])
+                print('Cancelar orden')
+                self.correct_order_creations()
                 self.order_cancellation(identification)
-                time.sleep(4)
                 order_data = self.order_choice(order_type, amount)
                 price, identification = order_data[0], order_data[1]
-                # time.sleep(4)
-            # if count % 50 == 0:
-            # time.sleep(5)
+
             count += 1
-            time.sleep(1)
+            time.sleep(2)
+
+    def avoid_errors(self, order_type, amount):
+        try:
+            self.order_cycle(order_type, amount)
+        except:
+            time.sleep(2.5)
+            current_order = self.my_orders(1, 1, 'canceled')['orders'][0]['type']
+            print(current_order)
+            return current_order
+
+    def permanent_order(self, order_type, amount):
+        while 1 > 0:
+            order_type = self.avoid_errors(order_type, amount)
