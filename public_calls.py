@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 # Desde acá se puede obtener infromación pública: Spreads, volumen, ordenes, etc...
 
 
@@ -33,16 +34,36 @@ class Currencies:
     def link_json_put(url, params, auth):
         return requests.put(url, auth=auth, json=params).json()
 
+##_____Modificación para volver a conectar a la URL
     def task(self, action, format_2, params=None, auth=None, format_1='markets'):
         url = self.url_generator(format_2, format_1)
         if action == 'get':
-            return self.link_json_get(url, params, auth)
+            try:
+                return self.link_json_get(url, params, auth)
+            except:
+                print('Error al traer información de la API, espero 2 segundos y vuelvo a intentar...:' )
+                time.sleep(2)
+                return self.link_json_get(url, params, auth)
         elif action == 'post':
-            return self.link_json_post(url, params, auth)
+            try:
+                return self.link_json_post(url, params, auth)
+            except:
+                print('Error al enviar la orden, espero 2 segundos y vuelvo a intentar...:' )
+                time.sleep(2)
+                return self.link_json_post(url, params, auth)
+
         elif action == 'put':
-            return self.link_json_put(url, params, auth)
+            try:
+                return self.link_json_put(url, params, auth)
+            except:
+                print('Error al cancelar la orden, espero 2 segundos y vuelvo a intentar...:' )
+                time.sleep(2)
+                return self.link_json_put(url, params, auth)
         else:
+            
             print('action required: get or post')
+
+
 
     def ticker(self):
         return self.task('get', 'ticker')

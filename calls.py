@@ -2,8 +2,63 @@ from public_calls import Currencies
 from private_calls import BudaHMACAuth
 import time
 import requests
+from playsound import playsound
+import re
+
+from tqdm.auto import tqdm
 # Este módulo permite hacer obtener información privada de la cuenta asociada
 # a la llave y API secret: balance, historial de ordenes, generar ordenes, etc..
+
+
+## Función para adquirir información de todos los mercados
+def get_market_info(api_key: str, api_secret: str, printter=True):
+    Info=dict()
+    #market_id=['btc-clp','eth-clp','bch-clp','ltc-clp','btc-cop','eth-cop','bch-cop','ltc-cop','btc-pen','eth-pen','bch-pen','ltc-pen','btc-ars','eth-ars','bch-ars','ltc-ars','eth-btc','bch-btc','ltc-btc']
+    market_id=['btc-clp','eth-clp','bch-clp','ltc-clp','btc-cop','eth-cop','bch-cop','ltc-cop','btc-pen','eth-pen','bch-pen','ltc-pen']
+   
+    for id in tqdm(market_id, desc='Recopilando info...'):
+        base_currency= re.findall('([a-z]*)-',id)[0]
+        quote_currency= re.findall('-([a-z]*)',id)[0]
+        # print (base_currency)
+        # print (quote_currency)
+        market = PrivateCalls(base_currency, quote_currency, api_key, api_secret)
+
+        #Info[id]= market.ticker()
+        #print (id,':',(market.ticker().keys()))
+        Info[id] = (market.ticker()['ticker'])
+        #print(type(Info[id]))
+        #print(type(Info[id]))
+        Info[id]['spread'] = market.spread()
+        #print (Info.keys())
+
+    if printter:
+        printmarktinfo(Info)
+
+    return Info
+
+
+def printmarktinfo (market_info):
+    count=0
+    print('\n \n \n')
+    print('______________________________________________________________________________________________________')
+
+    for info in market_info:
+        print('__________________________________________________________________________________________________')
+        if info=='btc-clp':
+            print('Market---Spread-----Volume----Last-Price-----Min-ask-------max-bi----------24h Var---7d var')
+        information = market_info[info]
+        unsortedkeys = information.keys()
+        keys = sorted(unsortedkeys)
+        # print(keys)
+        # print (info,':',market_info[info].items())
+        ##-----Market--------------------Spread----------------------------------------Volume---------------------------------Last_price----------------------min_ask-------------------------------max_bid----------------------variation24h------------------------------------variation7d
+        print (count,info,' : ',round(float(information[keys[6]][2]),3),' | ',round(float(information[keys[7]][0]),1),' | ',(information[keys[0]][0]),' | ',(information[keys[3]][0]),' | ',(information[keys[2]][0]),' | ',round(float(information[keys[4]])*100,1),' | ',round(float(information[keys[5]])*100,1))
+        count= count+1
+    #____________________________________________________________________________
+
+
+
+
 
 
 class PrivateCalls(Currencies):
@@ -62,13 +117,11 @@ class PrivateCalls(Currencies):
             price = values[0] - 1
         elif order_type == 'Bid':
             price = values[1] + 1
-        else:
-            print('Ingresar una operación valida')
-            return None
+        
 
         if values[2] >= (gain + feed):
             response = self.order_creation(order_type, price, amount)
-            return price, response['order']['id']
+            return price, response['order']['id'],values[2]
         else:
             print('El spread no es suficiente')
             return 'El spread no es suficiente'
@@ -101,19 +154,25 @@ class PrivateCalls(Currencies):
         if order_data == 'El spread no es suficiente':
             price = float(self.order_book()['order_book']['bids'][1][0]+1)'''
 
+        price, identification = order_data[0], order_data[1]
 
-        try:
-            price, identification = order_data[0], order_data[1]
-        except TypeError:
-            print('Nos jodimos')
-            return None
+        # try:
+        #     price, identification = order_data[0], order_data[1]
+        # except TypeError:
+        #     print('Nos jodimos')
+        #     return None
 
         print(price)
         time.sleep(5)
         count = 1
         while 1 > 0:
-            print(count)
+            print(count,'El spread actual es de : ',round(order_data[2],3),'%')
             references = self.spread()
+            try:
+                playsound(r"C:\Users\dagma\Desktop\Trading_Bot_Git\Trading_bot\Ckeck.wav")
+            except:
+                print("No se encuentra ruta de archivo de audio..")
+                pass
             if order_type == 'Ask':
                 reference = references[0] # Min Ask
             elif order_type == 'Bid':
