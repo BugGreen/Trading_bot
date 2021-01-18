@@ -1,6 +1,8 @@
 import requests
 import json
 import time
+from playsound import playsound
+
 # Desde acá se puede obtener infromación pública: Spreads, volumen, ordenes, etc...
 
 
@@ -42,14 +44,24 @@ class Currencies:
                 return self.link_json_get(url, params, auth)
             except:
                 print('Error al traer información de la API, espero 2 segundos y vuelvo a intentar...:' )
-                time.sleep(2)
+                try:
+                    playsound(r"C:\Users\dagma\Desktop\Trading_Bot_Git\Trading_bot\Ring07.wav")
+                except:
+                    print("No se encuentra ruta de archivo de audio..")
+                    pass
+                #time.sleep(2)
                 return self.link_json_get(url, params, auth)
         elif action == 'post':
             try:
                 return self.link_json_post(url, params, auth)
             except:
                 print('Error al enviar la orden, espero 2 segundos y vuelvo a intentar...:' )
-                time.sleep(2)
+                try:
+                    playsound(r"C:\Users\dagma\Desktop\Trading_Bot_Git\Trading_bot\Ring07.wav")
+                except:
+                    print("No se encuentra ruta de archivo de audio..")
+                    pass
+                #time.sleep(2)
                 return self.link_json_post(url, params, auth)
 
         elif action == 'put':
@@ -57,13 +69,18 @@ class Currencies:
                 return self.link_json_put(url, params, auth)
             except:
                 print('Error al cancelar la orden, espero 2 segundos y vuelvo a intentar...:' )
-                time.sleep(2)
+                try:
+                    playsound(r"C:\Users\dagma\Desktop\Trading_Bot_Git\Trading_bot\Ring07.wav")
+                except:
+                    print("No se encuentra ruta de archivo de audio..")
+                    pass
+                #time.sleep(2)
                 return self.link_json_put(url, params, auth)
         else:
             
             print('action required: get or post')
 
-
+##____________________________________________________________________________________________________________________________
 
     def ticker(self):
         return self.task('get', 'ticker')
