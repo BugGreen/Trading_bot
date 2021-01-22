@@ -55,7 +55,7 @@ class PrivateCalls(Currencies):
         return min_ask, max_bid, percentage
 
     def order_choice(self, order_type, amount, gain=0):
-        feed = 0.4
+        feed = 0.8
         values = self.spread()
 
         if order_type == 'Ask':
@@ -104,9 +104,7 @@ class PrivateCalls(Currencies):
     def order_cycle(self, order_type, amount):
 
         order_data = self.order_choice(order_type, amount)
-        '''
-        if order_data == 'El spread no es suficiente':
-            price = float(self.order_book()['order_book']['bids'][1][0]+1)'''
+        print(order_data)
 
         try:
             price, identification = order_data[0], order_data[1]
@@ -117,6 +115,8 @@ class PrivateCalls(Currencies):
         print(price)
         time.sleep(5)
         count = 1
+
+        original_amount = amount
 
         while 1 > 0:
 
@@ -132,6 +132,7 @@ class PrivateCalls(Currencies):
                     print('La orden {}, fue completada satisfactoriamente en la iteración {}.'.format(order_type,
                                                                                                       count))
                     order_type = self.change_type(order_type)
+                    amount = original_amount
                     print('Procedo a generar una orden {}'.format(order_type))
                     time.sleep(3.5)
                 elif status == 'Incomplete':
