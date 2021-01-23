@@ -16,6 +16,7 @@ market_info= get_market_info(api_key,api_secret)
 
 
 markets=(market_info.keys())
-createmarket(markets, api_key, api_secret,gain=1,Sound=False)
+gain=float(input('Digite la ganancia tentativa en %: '))
+createmarket(markets, api_key, api_secret,gain=gain,Sound=True)
 
 #btc_cop=PrivateCalls('btc', 'cop', api_key, api_secret)

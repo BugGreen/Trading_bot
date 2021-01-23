@@ -125,6 +125,14 @@ def createmarket(marketss,api_key,api_secret,gain=0,Sound=True):
                 create_order=False
                 create_market=False
             except:
+                if Sound:
+                        try:
+                            playsound(r"C:\Users\dagma\Desktop\Trading_Bot_Git\Trading_bot\windows_error.mp3")
+                        except:
+                            print("No se encuentra ruta de archivo de audio..")
+                            pass
+                        else:
+                            time.sleep(1)
                 print('No fue posible crear la orden, intente de nuevo...')
                 create_order=False
                 create_market=True
@@ -175,7 +183,10 @@ class PrivateCalls(Currencies):
         params = {
             'state': 'canceling',
         }
-        return self.private_task('put', order_id, params, 'orders')
+        order_data_state=self.private_task('put', order_id, params, 'orders')
+
+
+        return order_data_state
 
     def spread(self):
         ticker = self.ticker() #Trae la info del mercado
@@ -228,9 +239,9 @@ class PrivateCalls(Currencies):
         values = self.spread() # Info actual del mercado- Min ask - Max bid - spread
         
         if order_type == 'Ask':
-            price = values[0] - 1
+            price = values[0] - 0.1
         elif order_type == 'Bid':
-            price = values[1] + 1
+            price = values[1] + 0.1
         #Se determinó el precio de venta o compra dependiendo de la operación
 
         if values[2] >= (gain + feed): #Se decide si se hace la orden dependiendo del spread
@@ -238,8 +249,8 @@ class PrivateCalls(Currencies):
                 response = self.order_creation(order_type, price, amount) #Si se crea la orden se recoge información de la misma, es un diccionario json
                 # ACA SI existe error en la orden puedo encontrar en respons 'code'---',message entre otras'
                 originalamount=float(response['order']['original_amount'][0])*float(response['order']['limit'][0]) #Se asigna el valor de la orden creada al original amount
-                # Retorna: Precio de apertura---id de orden---Spread en porcentaje---id de mercado---Fecha de creación-----Valor en pesos a comprar o vender
-                return price, response['order']['id'] , values[2],response['order']['market_id'] , response['order']['created_at'],originalamount
+                # Retorna: Precio de apertura---id de orden---Spread en porcentaje---id de mercado---Fecha de creación-----Valor en pesos a comprar o vender,retorna tambien toda la respuesta
+                return price, response['order']['id'] , values[2],response['order']['market_id'] , response['order']['created_at'],originalamount,response
             except:
                 print('No es posible crear la orden, verifique si realiza la operación con una cantidad al monto mínimo o si tiene los recursos suficientes...')
                 time.sleep(3)
@@ -289,7 +300,7 @@ class PrivateCalls(Currencies):
             while order_data== (None,None,None): # Se queda esperando hasta un spread adecuado
                 order_data = self.order_choice(order_type,amount,gain)
                 
-                time.sleep(5)
+                time.sleep(2)
                 print('Esperando un Spread adecuado el actual es de:',round( self.spread()[2],3),'% Diferencia del: ',round( self.spread()[2],3)-gain,'%',end="\r")
                 try:
                     price, identification, original_amount = order_data[0], order_data[1], order_data[5]
@@ -318,7 +329,7 @@ class PrivateCalls(Currencies):
                 opera = 'Comprar'
                 #SE TRADUCEN LAS ORDENES A ESPAÑOL
             try:
-                print('El spread actual es de : ',round(references[2],3),'% Diferencia del ',round(references[2]-gain,3),'% ----Se está intentando',opera, amount/price, ' criptos con :',amount)#round(order_data[2],3),'%')
+                print('El spread actual es de : ',round(references[2],3),'% Diferencia del ',round(references[2]-gain,3),'% ----Se está intentando',opera, amount/price, ' criptos en :',round(amount,2), 'A un precio de: ',round(price,2))#round(order_data[2],3),'%')
             except:
                 print('No hay orden creada')
                 pass
@@ -328,10 +339,13 @@ class PrivateCalls(Currencies):
                 elif order_type == 'Bid':
                     reference = references[1] # Max Bid
                     # Se determina la refencia de precio dependiendo del tipo de orden que se está ejecutando... y se le asigna a reference, references viene del método spread
-                if price != reference : #Si el precio al cual se creó la orden es diferente de al del mercado
+                
+                
+                if round(price,2) != reference : #Si el precio al cual se creó la orden es diferente de al del mercado
+                    print(price,reference)
                     status_info = self.filled(identification) # Se determina el estado de la orden COMLETA A MEDIAS O PENDIENTE
                     status, diff = status_info[0], status_info[1] #SE le asigna a status el estado de la orden y a diff la cantidad faltante por ejecutar
-                    
+                                        
                     if status == 'Traded': # Si se completa la orden
                         if amount<1:
                             amount_list.append(amount) 
@@ -360,6 +374,7 @@ class PrivateCalls(Currencies):
                         ## EN EL BLOQUE DE INSTRUCCIONES PREVIAS SE GUARDAN LAS HORAS Y FECHAS DE LAS OPERACIONES COMPLETADAS
                         amount=amount_0*0.9960159 ## REVISAR°°________________________________________________°°°°
                         print("Se ejecutó la orden en la iteración: ",count)
+                        cancelling=False
 
                         if Sound:
                             try:
@@ -372,6 +387,30 @@ class PrivateCalls(Currencies):
                     #ACA SUENA CUANDO SE COMPLETA UNA ORDEN---------- ES OPCIONAL CON EL BOLEANO Sound
 
                     if status == 'Incomplete': # Si la orden se ejecuto a medias... 
+                        if amount<1:
+                            amount_list.append(amount-diff) 
+                        elif amount>1:
+                            amount_list.append((amount-diff)/order_data[0])
+                         #EN LOS CONDICIONALES ANTERIOR SOLO SE GUARDAN EN UN VECTOR EL AMOYUNT DE LA ORDEN COMPLETADA
+                        if order_type =='Ask':
+                            sells=sells+1
+                            changes_types.append('Venta Incompleta')
+                        if order_type =='Bid':
+                            buys=buys+1
+                            changes_types.append('Compra Incompleta')
+                        # Y ACA SE GUARDAN LOS TIPOS DE ORDENES REALIZADAS IGUAL, EN UN VECTOR
+
+                        now = datetime.datetime.now()
+                        day=str(now.day)
+                        month=str(now.month)
+                        year=str(now.year)
+                        hour=str(now.hour)
+                        minute=str(now.minute)
+                        price_list.append(order_data[0])
+
+                        date= day+'/'+month+'/'+year+'  '+hour+':'+minute
+                        changes_dates.append(date)
+
                         print('Se ejecutó a medias la orden')
                         if Sound:
                             try:
@@ -389,35 +428,98 @@ class PrivateCalls(Currencies):
 
                     #SE EVALUA SI HAY ORDEN POR CANCELAR
                     if cancelling==True:
-                        print(reference, order_type, '\n....CANCELANDO ORDEN....')                    
-                        self.order_cancellation(identification)
-                    
-                    # print(self.order_book()['order_book']['bids'][1])
-                    try:#Intenta cancelar orden
-                        self.order_cancellation(identification)
-                        time.sleep(1)
-                    except:
-                        print('No pude cancelar orden... Volveré a intentar')
-                        time.sleep(1)
+                        print('\n....CANCELANDO ORDEN....')                    
                         try:
-                            self.order_cancellation(identification)
-                            time.sleep(1)
+                            data_order_cancelation=self.order_cancellation(identification)
+                            if not data_order_cancelation['order']['state']=='canceled':
+                                cancelOK=False
+                                Error=False
+                            else:
+                                cancelOK=True
+                            while cancelOK==False:
+                                data_order_cancelation=self.order_cancellation(identification)
+                                if data_order_cancelation['order']['state']=='traded':
+                                    cancelOK=True
+
+
+
+                                order_state=data_order_cancelation#self.order_status(identification)
+                                
+                                # print('Cancelación: ',data_order_cancelation['order']['state'],end='\r')
+                                if order_state['order']['state']=='canceled':
+                                    print('\n No hay error en la cancelación')
+                                    Error=False
+                                    cancelOK=True
+                                
+                                else:
+                                    cancelOK=False
+                                    Error=True
+                                    print('...Intentando cancelar orden...',end='\r')
+                                
                         except:
-                            print('Defeinitivamente no pude cancelar la orden... salgo del loop')
                             break
+                            # Error=True
+                            # # Trys=1
+                            # time.sleep(2)
+                            # while Error== True:
+                            #     print('No se logró cancelar la orden... intento de nuevo')
+                            #     try:    
+                            #         data_order_cancelation=self.order_cancellation(identification)
+                            #         if 'order' in data_order_cancelation:
+                            #             Error=False
+                            #     except:
+                            #         pass
+
+                            
+                    
+                    # # print(self.order_book()['order_book']['bids'][1])
+                    # try:#Intenta cancelar orden
+                    #     self.order_cancellation(identification)
+                    #     time.sleep(1)
+                    # except:
+                    #     print('No pude cancelar orden... Volveré a intentar')
+                    #     time.sleep(1)
+                    #     try:
+                    #         self.order_cancellation(identification)
+                    #         time.sleep(1)
+                    #     except:
+                    #         print('Defeinitivamente no pude cancelar la orden... salgo del loop')
+                    #         break
 
                     # SE TERMINA DE CANCELAR LA ORDEN
 
-                    try: #ACÁ SE INTENTA CREAR LA NUEVA ORDEN DEL TIPO CONTRARIO
-                        order_data = self.order_choice(order_type, amount,gain) ## Se crea la nueva orden
-                        
-                        if order_data ==(None,None,None):
-                            cancelling=False # SI NO SE CREA LA ORDEN NO HABRÄ ORDEN POR CANCELAR POR LO QUE CANCELLING = FAlse
-                        else:
-                            cancelling=True # SI SE LOGRA CREAR ENTONCES SI HABRÁ POR LO QUE CANCELLING =True 
-                    except:
-                        cancelling=False
-                        pass
+                    if Error==False:
+                        # time.sleep(0.5)
+                        try: #ACÁ SE INTENTA CREAR LA NUEVA ORDEN DEL TIPO CONTRARIO
+                            # print('1')
+                            order_data = self.order_choice(order_type, amount,gain) ## Se crea la nueva orden
+                            # print('2')
+                            order_data_creation=order_data[6]
+                            # print('3')
+                            order_data_creation=self.order_status(order_data[1])
+                            # print('4')
+                            print(order_data_creation['order']['state'])
+                            while not order_data_creation['order']['state']=='pending':
+                                print('Esperando recepción',end='\r')
+                                order_data_creation=self.order_status(order_data[1])
+
+                            print('\n Se creó la orden...')
+
+                            if order_data ==(None,None,None):
+                                cancelling=False # SI NO SE CREA LA ORDEN NO HABRÄ ORDEN POR CANCELAR POR LO QUE CANCELLING = FAlse
+                            elif order_data_creation['order']['state']=='pending' :
+                                print('Orden enviada y aceptada')
+                                cancelling=True # SI SE LOGRA CREAR ENTONCES SI HABRÁ POR LO QUE CANCELLING =True 
+
+                        except:
+                            cancelling=False
+                            pass
+                    else:
+                        print('No se crea orden...')
+
+                        continue
+
+
 
                     price, identification= order_data[0], order_data[1] 
                     # time.sleep(4)
@@ -427,7 +529,7 @@ class PrivateCalls(Currencies):
                 if count%10==0:
                     os.system('cls')
                     try:
-                        print('Se llevan: ',count,' iteraciones.')
+                        print('Se llevan: ',count,' iteraciones.  Se está intentando: ',opera)
                         print('Se llevan: ', buys,' compras y ',sells,' ventas----> ',order_data[3] )
                         date=re.findall('(.*)T',starts_at)[0]
                         hour=int(str((re.findall('([0-9]*):',(re.findall('T(.*):',starts_at)[0].split()[0])))[0]))-5
@@ -454,7 +556,8 @@ class PrivateCalls(Currencies):
 
                     except:
                         print('No hay información relacionada')
-                time.sleep(1)
+                time.sleep(0.2)
+
             elif cancelling == False:
                 cancel=0
 

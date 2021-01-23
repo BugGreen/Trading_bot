@@ -56,25 +56,29 @@ class Currencies:
         try:
             data = requests.post(url, auth=auth, json=params).json() #SE LLAMA A LA URL con la autenticación y los parámetros de la orden
             flg=data.keys() #Este flag se usa para determinar si se recibio una respuesta de error o no
-            print(flg,'1') #ESTAR PENDIENTE ACA ES DONDE SE CREA LA ORDEN DE COMPRA SI EN flg no está 'order' no fue posible ejecutarla
+            
         except:
             flg=list()
             print(flg,'2')
         while not 'order' in flg: #Si no está "order " en flg significa que no se aceptó la orden, se procede a evaluar el error
             try: #Primero se intenta enviar de nuevo la orden, 
+                
+                time.sleep(4)
                 print('¡¡¡¡Intentando enviar orden a Buda!!!!')#,end="\r")
                 data=requests.post(url,auth=auth,params=params).json() #Si funciona no entra en el except
                 flg=data.keys()#Si funciona la linea anterior se actualiza flg si no... pasa de una vez al Except sin actualizar flg
                 print(flg,'3')
                 
             except:#Si definitivamente no hay respuesta positiva... Ahora si se evalua el error
+                time.sleep(5)
                 if 'errors' in flg: # Se determina si hay error en las keys del diccionario json que retornó
                     print('ERROR:')
                     print(data['message'],'  :  ',data['errors'][0]['message']) #Se imprime el error obtenido
                     
                     if data['errors'][0]['message']== 'insolvent': #Si es por fata de recursos se procede a bajar de a pocos el amount para ver si se logra generar la orden
                         print('Parámetros iniciales:  ', params['amount'],' y la cantidad de dinero: ',params['amount']*params['limit'])
-                        for times in range(3): #Lo hacemos 3 veces.. Se podría cambiar para bajar mas veces pero creo que con 3 está bien
+                        for times in range(5): #Lo hacemos 3 veces.. Se podría cambiar para bajar mas veces pero creo que con 3 está bien
+                            time.sleep(1)
                             params['amount']=params['amount']*0.995 #Se reduce unicamente el parámetro "amount"
                             print('Se baja la cantidad de monedas a: ',params['amount'],' y la cantidad de dinero a: ',params['amount']*params['limit']) #Imprimimos info del nuevo amount y nuevo dinero a invertir o recibir
                             data= requests.post(url, auth=auth, json=params).json()# Volvemos a llamar con el nuevo parámetro y esperamos llamada a ver si es positiva o de error
@@ -185,6 +189,8 @@ class Currencies:
 
     def trades_time(self):
         return self.task('get', 'trades')
+
+    
 
     # Con este método se pueden generar ordenes de compra y venta de prueba
     def quotation_simulation(self, amount, action):

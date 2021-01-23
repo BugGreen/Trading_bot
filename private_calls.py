@@ -3,7 +3,7 @@ import hmac
 import time
 import requests.auth
 import json
-
+# Acá se realiza el proceso de autenticación para lograr hacer llamadas privadas
 
 class BudaHMACAuth(requests.auth.AuthBase):
     """Adjunta la autenticación HMAC de Buda al objeto Request."""
